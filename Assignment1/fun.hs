@@ -38,13 +38,14 @@ fib_tr n =
             if i == n then (prev1 + prev2)
             else fib_tr_h (prev1) (prev1 + prev2) (i + 1)
     in
-        if n <= 0 then n
+        if n <= 1 then n
         else fib_tr_h 0 1 2
 
 --- >>> fib_tr 16
 --- 987
---- >>> fib_tr 0
+--- >>> fib_tr 2
 --- 0
+
 
 
 insertion_sort_tr ls = 
