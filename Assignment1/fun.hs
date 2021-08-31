@@ -1,6 +1,4 @@
 
-
-
 rev_tr ls = 
     let 
         rev_tr_h rem_ls curr_ls = 
@@ -10,27 +8,34 @@ rev_tr ls =
     in 
         rev_tr_h ls []
             
-
 -- >>> rev_tr [1,2,3]
 -- [3,2,1]
--- >>>rev_tr [2]
--- []
 
+-- Invariant: the arguments of 
+-- rev_tr_h:- rem_ls and curr_ls always follow
+-- reverse(curr_ls) ++ rem_ls == ls
+-- curr_ls in decreasing in size at each step
+-- so finally reverse(curr_ls) == ls and it is
+-- returned
+-- Time Complexity - O(n)
 
 merge_tr ls1 ls2 = 
     let 
         merge_tr_h rem1 rem2 curr = 
             case (rem1, rem2) of
-                ([],_) -> curr ++ rem2
-                (_,[]) -> curr ++ rem1
-                (x:xs, y:ys) -> if x < y then merge_tr_h xs rem2 (curr ++ [x])
-                                else merge_tr_h rem1 ys (curr ++ [y])
+                ([],_) -> rem2 ++ curr
+                (_,[]) -> rem1 ++ curr
+                (x:xs, y:ys) -> if x < y then merge_tr_h xs rem2 (x:curr)
+                                else merge_tr_h rem1 ys (y:curr)
     in
-        merge_tr_h ls1 ls2 []
+        rev_tr (merge_tr_h ls1 ls2 [])
 
---- >>> merge_tr [3,5,8] [1,2,6]
+--- >>> merge_tr [3,5,8] [1,2,7]
 --- [1,2,3,5,6,8]
 ---
+--- Invariant: multiset(rem1 ++ rem2 ++ curr) == multiset(ls1 ++ ls2)
+--- and curr is sorted
+--- Time Complexity - O(n)
 
 fib_tr n = 
     let 
@@ -41,13 +46,18 @@ fib_tr n =
         if n <= 1 then n
         else fib_tr_h 0 1 2
 
---- >>> fib_tr 16
---- 987
---- >>> fib_tr 2
---- 0
+--- >>> fib_tr 1000
+--- 43466557686937456435688527675040625802564660517371780402481729089536555417949051890403879840079255169295922593080322634775209689623239873322471161642996440906533187938298969649928516003704476137795166849228875
+---
+
+-- Invariant: 
+-- i >= 2, prev1 = fib(i-1), prev2 = fib(i-2)
+-- Time Complexity O(n), assuming O(1) addition,
+-- If addition of n digit number is O(n)
+-- then time complexity = O(n^2)
 
 
-
+---- TODO: insert function is not tail recursive! 
 insertion_sort_tr ls = 
     let
         insert sorted_ls e =
@@ -65,9 +75,20 @@ insertion_sort_tr ls =
 
 -- >>> insertion_sort_tr [3,2,9,69,22,13,42,24,33,1,-1,2,2]
 -- [-1,1,2,2,2,3,9,13,22,24,33,42,69]
--- >>> insertion_sort_tr [1,1,1,1,1,1,1,-6]
--- [-6,1,1,1,1,1,1,1]
---
+
+-- insert function->
+-- insert [] x = [x] base case
+-- insert ls x = correct for size ls <= k
+-- consider ls of size == k + 1
+-- if head ls >= x then x : ls is correct
+-- else x should be inserted in tail ls
+-- which works correctly by induction hypothesis.
+
+-- invariant for sort function->
+-- sorted_ls is always sorted
+-- multiset(sorted_ls ++ rem) == multiset(ls)
+
+-- Time Complexity O(n^2)
 
 quick_sort ls = 
     let
@@ -90,11 +111,24 @@ quick_sort ls =
 
 -- >>> quick_sort [3,2,9,69,22,13,42,24,33,1,-1,2,2] 
 -- [-1,1,2,2,2,3,9,13,22,24,33,42,69]
--- >>> quick_sort []
--- []
--- >>> [2,3]!!1
--- 3
---
+
+-- Split function
+-- Assuming it works for smaller size list, 
+-- split is called on tail of ls 
+-- and head ls is inserted in the one of
+-- spiltted lists appropiately.
+
+--- quicksort ->
+--- Assumming it works for samller lists
+--- a given list is split into 3 peices,
+--- a pivot element, a list with elements <= pivot,
+--- list with elements > pivot
+--- then the two smaller lists are sorrted
+--- and the three peices are joined appropiately.
+
+--- Time Complexity - O(n^2) worst case
+--- O(nlogn) on average
+
 
 binary_search ls e lo hi = 
     if lo == hi then e == ls!!lo
@@ -107,11 +141,16 @@ binary_search ls e lo hi =
             else binary_search ls e (mid + 1) hi
 
 
+
 -- >>> binary_search [2,3,4,5,6,7,10] 8 0 7
 -- False
--- >>> binary_search [2,3,4,5,6,7,10] 6 0 7
--- True
---
+
+--- Assuming binary_search works for smaller lists
+--- A given sorted list is split into two non empty halves
+--- if e <= last element of first half
+--- then e must be searched in the first half
+--- otherwise it must be searched in the second half.
+--- Time complexity O(n * log (hi - lo))
 
 --------------------------------------------------------------------
 --- Problem 2
@@ -120,7 +159,7 @@ binary_search ls e lo hi =
 myRNG seed1 seed2 = 
     let 
         x = (seed1 * 1103569345 + seed2 * 49993101 + 3422313)
-        y = (seed2 * 97411023341 + seed1 * 88763322+ 5647337)
+        y = (seed2 * 97411023341 + seed1 * 88763322 + 5647337)
     in
         (x, y)
 
@@ -155,6 +194,48 @@ prime n q =
 
 
 
+-----------------------------------------------------------------
+-- Problem 3
+
+
+double_sum a b c d f =
+    let 
+        sum_inner lo hi y f =
+            if lo > hi then 0
+            else f lo y + sum_inner (lo + 1) hi y f
+    in
+        if a > b then 0
+        else sum_inner c d a f + double_sum (a + 1) b c d f
+
+
+-- >>> double_sum 1 3 1 3 (\x y -> x + y)
+-- 36
+
+
+first_derivate f x =
+    let 
+        h = 1e-8
+    in 
+        (f (x + h) - f (x- h)) / (2.0 * h)
+
+
+
+newton_root f curr_guess tol = 
+    let 
+        f' = first_derivate f
+    in
+        if abs (f curr_guess) < tol then curr_guess
+        else 
+            let
+                new_guess = curr_guess - ((f curr_guess) / (f' curr_guess))
+            in
+                newton_root f new_guess tol
+
+
+
+--- >>> newton_root (\x -> (x * x) - 2) 2 1e-8
+--- 1.4142135623746774
+---
 
 
 
