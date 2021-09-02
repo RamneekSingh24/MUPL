@@ -57,24 +57,25 @@ fib_tr n =
 -- then time complexity = O(n^2)
 
 
----- TODO: insert function is not tail recursive! 
+
 insertion_sort_tr ls = 
     let
-        insert sorted_ls e =
+        insert sorted_ls e prev_elems =
             case sorted_ls of
-                [] -> [e]
-                x:xs -> if e <= x then e:sorted_ls
-                        else x:(insert xs e)
+                [] -> (rev_tr prev_elems) ++ [e]
+                x:xs -> if e <= x then (rev_tr prev_elems) ++ (e:sorted_ls)
+                        else insert xs e (x:prev_elems)
         helper sorted_ls rem = 
             case rem of 
                 [] -> sorted_ls
-                x:xs -> helper (insert sorted_ls x) xs
+                x:xs -> helper (insert sorted_ls x []) xs
         
     in
         helper [] ls
 
--- >>> insertion_sort_tr [3,2,9,69,22,13,42,24,33,1,-1,2,2]
--- [-1,1,2,2,2,3,9,13,22,24,33,42,69]
+-- >>> insertion_sort_tr [3,2,9,69,22,13,42,24,33,1,-1,2,2,68,68,-13,198]
+-- [-13,-1,1,2,2,2,3,9,13,22,24,33,42,68,68,69,198]
+--
 
 -- insert function->
 -- insert [] x = [x] base case
