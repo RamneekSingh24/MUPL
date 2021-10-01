@@ -1,178 +1,124 @@
-module BigInteger (add, mul) where
+module BigInteger (add, mul, karatsuba) where
     import Data.Char
-    
     fromString:: String -> [Int]
     toString:: [Int] -> String
-    negate_l:: [Int] -> [Int]
-    removeTrailingZero:: [Int] -> [Int]
-    sign::[Int] -> Int
-    abs_l::[Int] -> [Int] 
-
-    abs_l num = map abs num
-
-    sign num = if length ((filter (\x -> x < 0) num)) > 0 then -1 else 1
-
-    negate_l num = map (\x -> -1 * x) num
-
-    removeTrailingZero num =
-        case num of
-            [] -> [0]
-            x:xs -> if x == 0 then removeTrailingZero xs else x:xs
-
-
-    fromString num = 
-        case num of
-            [] -> []
-            _ ->
-                let
-                    sgn = if (head num) == '-' then -1 else 1
-                    val = if sgn == -1 then (tail num) else num
-                    check = foldl (\x y -> (x && y)) True (map isDigit val)
-                in
-                    if check then reverse (map (\x -> (digitToInt x) * sgn ) val)
-                    else error "not a number" -- TODO: throw exception
-            
-    toString [] = "0"
-    toString digits = 
-        let 
-            sgn = if sign digits == -1 then "-" else ""
-            val = map abs (removeTrailingZero (reverse digits))
-        in 
-            sgn ++ (map intToDigit val) 
-    
-
-
-    add_h:: [Int] -> [Int] -> Int -> Int -> ([Int], Int)
-    -- adds two integers in given in list of digits format, LSD = head of list
-    add_h [] [] c _ = ([], c)
-    add_h num [] c b = 
-        let
-            x = (head num) + c + b
-            d = mod x b
-            new_c = (div x b) - 1 
-            (result, carry) = add_h (tail num) [] new_c b
-        in
-            (d:result, carry)
-
-    add_h [] num c b = 
-        let
-            x = (head num) + c + b
-            d = mod x b
-            new_c = (div x b) - 1 
-            (result, carry) = add_h [] (tail num) new_c b 
-        in
-            (d:result, carry)
-
-
-
-    add_h num1 num2 c b = 
-        let 
-            x = (head num1) + (head num2) + c + b
-            d = mod x b
-            new_c = (div x b) - 1 
-            (result, carry) = add_h (tail num1) (tail num2) new_c b 
-        in
-            (d:result, carry)
-    
-    add_list:: [Int] -> [Int] -> Int -> [Int]
-    
-    add_list num1 num2 b = 
-        fromString (add (toString num1) (toString num2) b)
-
     add:: String -> String -> Int -> String
-    add num1 num2 base = 
-        let 
-            (result, carry) = add_h (fromString num1) (fromString num2) 0 base
-        in
-            if carry == 0 then toString result
-            else if carry > 0 then toString (result ++ [carry])
-            else 
-                let
-                    extra = (map (\x -> 0) result) ++ [-carry]
-                    (final_res,_) = (add_h extra (negate_l result) 0 base)
-                in toString (negate_l final_res)
+    mul::String -> String -> Int -> String
+    karatsuba:: [Int] -> [Int] -> Int -> [Int]
 
+    fromString s = map digitToInt (reverse s)
+
+    removeTrailingZero:: String -> String
+    removeTrailingZero "" = "0"
+    removeTrailingZero x = if (head x) == '0' then removeTrailingZero (tail x) else x
+
+    toString digits = removeTrailingZero (map intToDigit (reverse digits))
+
+    prepare:: ([Int], [Int]) -> ([Int], [Int])
+
+    prepare (x, y) = 
+        let 
+            lx = length x
+            ly = length y
+            diff = abs (lx - ly)
+        in
+            if lx > ly then (x, (y ++ (map (\x -> 0) [1..diff])))
+            else ((x ++ (map (\x -> 0) [1..diff]), y))
+
+
+    add_list:: [Int] -> [Int] -> Int -> [Int]
+
+    add_list_h:: [Int] -> [Int] -> [Int] -> Int -> Int -> [Int]
+
+    add_list_h [] [] curr c b = if c == 0 then reverse curr else reverse (c:curr)
+
+    add_list_h x y curr c b =
+        let
+            d1 = head x
+            d2 = head y
+            sum = d1 + d2 + c
+            d = if sum >= b then sum - b else sum
+            new_c = if sum >= b then 1 else 0
+        in  
+            add_list_h (tail x) (tail y) (d:curr) new_c b
+    
+    add_list num1 num2 b =
+        let
+            (x, y) = prepare(num1, num2)
+        in
+            add_list_h x y [] 0 b
+
+    add x y b = 
+        toString (add_list (fromString x) (fromString y) b)
+
+
+    sub_list:: [Int] -> [Int] -> Int -> [Int]
+    sub_list_h:: [Int] -> [Int] -> [Int] -> Int -> Int -> [Int]
+
+
+    sub_list_h [] [] curr c b = if c == 0 then reverse curr else error "invalid subtract"
+
+    sub_list_h x y curr c b = 
+        let 
+            d1 = head x
+            d2 = head y
+            s = d1 - d2 + c
+            d = if s < 0 then b + s else s
+            new_c = if s < 0 then -1 else 0
+        in  
+            sub_list_h (tail x) (tail y) (d:curr) new_c b
+
+    sub_list num1 num2 b =
+        let 
+            (x, y) = prepare(num1, num2)
+        in 
+            sub_list_h x y [] 0 b
 
 
     rightShift:: [Int] -> Int -> [Int]
-    rightShift num x = (map (\x -> 0) [1..x]) ++ num
+    rightShift x n = 
+        (map (\x -> 0) [1..n]) ++ x
 
+    karatsuba [x] [y] b = 
+        let
+            m = x * y
+        in 
+            [(mod m b), (div m b)]
 
-    padZeroes:: [Int] -> Int -> [Int]
-    padZeroes num len = 
-        if len < (length num) then error "error"
-        else num ++ (map (\x -> 0) [1..(len - (length num))])
-
-
-    nhp_two:: Int -> Int -> Int
-    nhp_two x p2 = if p2 >= x then p2 else nhp_two x (p2*2)
-    
-    prepare:: ([Int],[Int]) -> ([Int],[Int])
-    prepare (a,b) = 
+    karatsuba num1 num2 b = 
         let 
-            len = max (length a) (length b)
-            pad_len = nhp_two len 1
-        in
-            (padZeroes a pad_len, padZeroes b pad_len)
-
-
-    mul:: String -> String -> Int -> String
-
-    karatsuba:: [Int] -> [Int] -> Int -> [Int]
-    --assumes +ve
-    karatsuba [x] [y] b = if (x * y) < b then [x * y] else [mod (x*y) b, div (x*y) b]
-    karatsuba num1 num2 base = 
-        let 
-            (x, y) = prepare (num1, num2)
+            (x, y) = prepare(num1, num2)
             n = length x
-            half_len = div n 2
-            xr = take half_len x
-            xl = drop  half_len x
-            yr = take half_len y
-            yl = drop half_len y
-            xlyl = karatsuba xl yl base  --1
-            xryr = karatsuba xr yr base  --2
-            xlpxr = add_list xl xr base
-            ylpyr = add_list yl yr base
-            cross_p = karatsuba xlpxr ylpyr base  --3
-            t1 = rightShift xlyl n
-            t2 = rightShift (add_list cross_p (negate_l (add_list xlyl xryr base)) base) half_len
-            xy = add_list t1 (add_list t2 xryr base) base
+            ln = div n 2
+            rn = n - ln
+            xl = drop rn x
+            xr = take rn x
+            yl = drop rn y
+            yr = take rn y
+            xlyl = karatsuba xl yl b
+            xryr = karatsuba xr yr b
+            cross_p = karatsuba (add_list xl xr b) (add_list yl yr b) b
+            t1 = rightShift (sub_list cross_p (add_list xlyl xryr b) b) rn
+            t2 = add_list (rightShift xlyl (2 * rn)) xryr b
         in
-            xy
-    
+            add_list t1 t2 b
+
+
     mul a b base =
         let 
-            num1 = fromString a
-            sgn1 = sign num1
-            num2 = fromString b
-            sgn2 = sign num2
-            prod = karatsuba (abs_l num1) (abs_l num2) base
-            sgn = sgn1 * sgn2
-            result = if sgn == 1 then prod else negate_l prod
+            (x, y) = prepare ((fromString a), (fromString b))
         in
-            toString result
-
-
-
-
-    
+            toString (karatsuba x y base)
+        
             
-                
 
 
 
 
-
-
-
-    
-
-
+        
 
 
     
 
-     
-    
-            
+
+        
