@@ -24,8 +24,8 @@ tokens :-
     "OR"                 { tok(\p s -> OR p "OR") }
     "XOR"                { tok(\p s -> XOR p "XOR") }
     "IMPLIES"            { tok(\p s -> IMPLIES p "IMPLIES") }
-    "TRUE"               { tok(\p s -> CONST p s)}
-    "FALSE"              { tok(\p s -> CONST p s)}
+    "TRUE"               { tok(\p s -> CONST p True)}
+    "FALSE"              { tok(\p s -> CONST p False)}
     "("                  { tok(\p s -> LPAREN p s) }
     ")"                  { tok(\p s -> RPAREN p s) }
     let					 { tok (\p s -> LET p "let") }
@@ -33,6 +33,7 @@ tokens :-
     if 				     { tok (\p s -> IF p "if") }
     then 				 { tok (\p s -> THEN p "then") }
     else 				 { tok (\p s -> ELSE p "else") }
+    "="                  { tok (\p s -> ASSIGN p "=" )}
     @id                  { tok (\p s -> ID p s) }
 
 
@@ -57,7 +58,7 @@ data Token =
     OR AlexPosn String |
     XOR AlexPosn String |
     IMPLIES AlexPosn String |
-    CONST AlexPosn String |
+    CONST AlexPosn Bool |
     LPAREN AlexPosn String |
     RPAREN AlexPosn String |
     LET AlexPosn String |
@@ -65,7 +66,8 @@ data Token =
     IF AlexPosn String |
     THEN AlexPosn String |
     ELSE AlexPosn String |
-    ID AlexPosn String 
+    ID AlexPosn String |
+    ASSIGN AlexPosn String
 	deriving (Eq,Show)
 
 token_posn (INT p _) = p
@@ -89,5 +91,6 @@ token_posn (IF p _) = p
 token_posn (THEN p _) = p
 token_posn (ELSE p _) = p
 token_posn (ID p _) = p
+token_posn (ASSIGN p _) = p
 
 }
