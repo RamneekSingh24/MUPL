@@ -26,7 +26,7 @@ dummyPos:: AlexPosn
 dummyPos = AlexPn 0 1 1
 
 
-data Bindings = Map String Expr deriving (Eq,Show)
+type Bindings = (Map String Expr)
 
 
 data Expr = Nil |
@@ -35,7 +35,7 @@ data Expr = Nil |
             Id  String |
             Bi  BinOpr Expr Expr |
             Uni  UniOpr Expr |
-            IfThenElse  Opr Expr |
+            IfThenElse  Expr Expr Expr |
             LetIn Bindings Expr
             deriving (Eq,Show)
 
@@ -67,65 +67,150 @@ precedence op =
         PosBin _  Xor -> 5
         PosBin _  Implies -> 6
 
-parse:: Tokens -> Expr
-
-parse [] = Nil
-parse toks = 
-    let 
-        (tok, next) = scanToken toks
-    in
-        case tok of
-            LET p s -> undefined
-            IN p s -> undefined
-            IF p s -> undefined
+parse:: String -> Expr
+parse prog = 
+    getExp (fst (parse_general (alexScanTokens prog)))
 
 
 
-parse_h:: [Opr] -> [Expr] -> Tokens -> (Expr, Tokens)
-parse_h ops exprs toks = undefined
-
-
-
-
+addOpr:: OprWithPos -> [OprWithPos] -> [ExprWithPos] -> ([OprWithPos], [ExprWithPos])
 makeTree:: [OprWithPos] -> [ExprWithPos] -> ExprWithPos
-makeTree [] exprs = case exprs of 
-                        [] -> error "Unknown AlexPn"
-                        [expr] -> expr
-                        _ -> error (show (getPos (last exprs)))
-
-makeTree oprs exprs =
-    let
-        opr = head oprs
-    in
-        case opr of
-            PosUni p op -> if (length exprs) < 1 then error (show p) 
-                           else 
-                               let
-                                   expr = Create p (Uni op (getExp (head exprs)))
-                                in
-                                    makeTree (tail oprs) (expr:(tail exprs))
-            PosBin p op -> if (length exprs) < 2 then error (show p)
-                           else
-                               let
-                                   expr1 = getExp (head exprs)
-                                   expr2 = getExp (exprs!!1)
-                                   expr = Create p (Bi op expr1 expr2)
-                                in
-                                    makeTree (tail oprs) (expr:(tail (tail exprs)))
-
-
-
-
 parse_normal_expr:: [OprWithPos] -> [ExprWithPos] -> Tokens -> (ExprWithPos, Tokens)
 parse_LetIn:: Tokens -> (ExprWithPos, Tokens)
 parse_IfThenElse:: Tokens -> (ExprWithPos, Tokens)
 parse_paren:: Tokens -> (ExprWithPos, Tokens)
-parse_LetIn toks = undefined
-parse_IfThenElse toks = undefined
-parse_paren toks = undefined
+parse_general:: Tokens -> (ExprWithPos, Tokens)
 
 
-addOpr:: OprWithPos -> [OprWithPos] -> [ExprWithPos] -> ([OprWithPos], [ExprWithPos])
+
+
+parse_general [] = ((Create (AlexPn 0 0 0) Nil), [])
+parse_general toks = 
+    let 
+        tok = nextToken toks
+    in
+        case tok of 
+            LET _ _ -> parse_LetIn toks
+            IF _ _  -> parse_IfThenElse toks
+            LPAREN _ _ -> parse_normal_expr [] [] toks
+            INT p _ -> parse_normal_expr [] [] toks
+            PLUS p _ -> error (show p)
+            MINUS p _ -> error (show p)
+            TIMES p _ -> error (show p)
+            NEGATE p _ -> parse_normal_expr [] [] toks
+            EQUALS p _ -> error (show p)
+            LESSTHAN p _ -> error (show p)
+            GREATERTHAN p _ -> error (show p)
+            NOT p _ -> parse_normal_expr [] [] toks
+            AND p _ -> error (show p)
+            OR p _ -> error (show p)
+            XOR p _ -> error (show p)
+            IMPLIES p _ -> error (show p)
+            CONST p _ -> parse_normal_expr [] [] toks
+            RPAREN p _ -> error (show p)
+            IN p _ -> error (show p)
+            THEN p _ -> error (show p)
+            ELSE p _ -> error (show p)
+            ID p _ -> parse_normal_expr [] [] toks
+            ASSIGN p _ -> error (show p)
+
+
+
+
+
+
+
+parse_paren [] = error "bug"
+parse_paren toks = 
+    if length toks < 3 then error (show (token_posn (head toks)))
+    else
+        let 
+            tok = nextToken toks
+        in
+            case tok of 
+                LPAREN p _ -> 
+                    let
+                        (expr, toks_left) = parse_general (tail toks)
+                    in
+                        if length toks_left < 1 then error (show p) -- no closing bracket found
+                        else
+                            let 
+                                end_tok = nextToken toks_left
+                            in
+                                case end_tok of
+                                    RPAREN _ _ -> (expr, (tail toks_left))
+                                    _ -> error (show (token_posn end_tok)) -- no closing bracket found
+                _ -> error (show (token_posn tok)) -- no closing bracket found
+
+
+-- [let_expr, var_name, assign, expr1, in, expr2]
+parse_LetIn toks = 
+    case toks of
+        (LET plet _):((ID _ var_name):((ASSIGN pasgn _ ):toks_left1)) ->
+            if length toks_left1 < 3 then error (show pasgn)
+            else 
+                let 
+                    (expr_assign, toks_left2) = parse_general toks_left1
+                in
+                    if length toks_left2 < 1 then error (show (getPos expr_assign))
+                    else if length toks_left2 < 2 then error (show (token_posn (head toks_left2)))
+                    else case toks_left2 of 
+                        (IN _ _):toks_left3 -> 
+                            let 
+                                (expr_in, toks_left4) = parse_general toks_left3
+                                binding = fromList [(var_name, (getExp expr_assign))]
+                            in
+                                (Create plet (LetIn binding (getExp expr_in)), toks_left4)
+                        _ -> error (show (token_posn (head toks_left2)))
+        [] -> error "bug"
+        _ -> error (show (token_posn (head toks)))
+
+
+-- [if, expr1, then, exrp2, else expr3]
+parse_IfThenElse [] = error "bug"
+parse_IfThenElse toks = 
+    if length toks <  6 then error (show (token_posn (head toks)))
+    else case toks of
+        (IF pif _):(tok1:toks_left1) ->
+            let
+                (expr_if, toks_left2) = parse_general (tok1:toks_left1)
+            in
+                case toks_left2 of
+                    (THEN pthen _):(tok3:toks_left3) -> 
+                        let
+                            (expr_then, toks_left4) = parse_general (tok3:toks_left3)
+                        in
+                            case toks_left4 of
+                                (ELSE pelse _):(tok5:toks_left5) -> 
+                                    let 
+                                        (expr_else, toks_left6) = parse_general (tok5:toks_left5)
+                                        expr_ifthenelse = 
+                                            Create pif (IfThenElse (getExp expr_if) (getExp expr_then) (getExp expr_else))
+                                    in
+                                        (expr_ifthenelse, toks_left6)
+                                _ -> error (show pthen)
+                    _ -> error (show pif)
+        _ -> error (show (token_posn (head toks)))
+
+    
+
+                                    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 addOpr op oprs exprs = 
     case op of
         PosUni p _ -> (op:oprs, exprs)
@@ -153,13 +238,36 @@ addOpr op oprs exprs =
                                     let 
                                         expr1 = getExp (head exprs)
                                         expr2 = getExp (exprs!!1)
-                                        expr = Create p (Bi opr expr1 expr2)
+                                        expr = Create p (Bi opr expr2 expr1)
                                     in
                                         addOpr op (tail oprs) (expr:(tail (tail exprs)))
 
                                 
 
+makeTree [] exprs = case exprs of 
+                        [] -> error "Unknown AlexPn"
+                        [expr] -> expr
+                        _ -> error (show (getPos (last exprs)))
 
+makeTree oprs exprs =
+    let
+        opr = head oprs
+    in
+        case opr of
+            PosUni p op -> if (length exprs) < 1 then error (show p) 
+                           else 
+                               let
+                                   expr = Create p (Uni op (getExp (head exprs)))
+                                in
+                                    makeTree (tail oprs) (expr:(tail exprs))
+            PosBin p op -> if (length exprs) < 2 then error (show p)
+                           else
+                               let
+                                   expr1 = getExp (head exprs)
+                                   expr2 = getExp (exprs!!1)
+                                   expr = Create p (Bi op expr2 expr1)
+                                in
+                                    makeTree (tail oprs) (expr:(tail (tail exprs)))
 
 
 parse_normal_expr oprs exprs [] = (makeTree oprs exprs, [])
@@ -268,6 +376,8 @@ parse_normal_expr oprs exprs toks =
 
             ASSIGN p s -> error (show p)
             
+
+
 
 
 -- make tree ops exprs = infix evaluation with parenthesis
