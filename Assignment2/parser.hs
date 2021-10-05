@@ -1,16 +1,16 @@
+-- TODO add proper errors
+
 import Data.Map
-import Stack
 import Lexer
 
 
 type Num = Int
-
-
 type Tokens = [Token]
+type Bindings = (Map String Expr)
 
-scanToken:: Tokens -> (Token, Tokens)
-scanToken [] = error "nextToken called on empty list"
-scanToken toks = (head toks, tail toks)
+
+dummyPos:: AlexPosn 
+dummyPos = AlexPn 0 1 1
 
 nextToken:: Tokens -> Token
 nextToken [] = error "nextToken called on empty list"
@@ -21,13 +21,6 @@ data UniOpr = Negate | Not deriving (Eq,Show)
 data Opr = BinOp BinOpr | UniOp UniOpr deriving (Eq,Show)
 
 data OprWithPos = PosBin AlexPosn BinOpr | PosUni AlexPosn UniOpr deriving (Eq,Show)
-
-dummyPos:: AlexPosn 
-dummyPos = AlexPn 0 1 1
-
-
-type Bindings = (Map String Expr)
-
 
 data Expr = Nil |
             Num  Int | 
@@ -51,7 +44,6 @@ getPos exp =
     case exp of
         Create p e -> p
 
-
 precedence:: OprWithPos -> Int
 precedence op =
     case op of
@@ -68,21 +60,20 @@ precedence op =
         PosBin _  Implies -> 6
 
 parse:: String -> Expr
-parse prog = 
-    getExp (fst (parse_general (alexScanTokens prog)))
-
-
-
-addOpr:: OprWithPos -> [OprWithPos] -> [ExprWithPos] -> ([OprWithPos], [ExprWithPos])
-makeTree:: [OprWithPos] -> [ExprWithPos] -> ExprWithPos
-parse_normal_expr:: [OprWithPos] -> [ExprWithPos] -> Tokens -> (ExprWithPos, Tokens)
+parse_general:: Tokens -> (ExprWithPos, Tokens)
 parse_LetIn:: Tokens -> (ExprWithPos, Tokens)
 parse_IfThenElse:: Tokens -> (ExprWithPos, Tokens)
 parse_paren:: Tokens -> (ExprWithPos, Tokens)
-parse_general:: Tokens -> (ExprWithPos, Tokens)
+
+parse_normal_expr:: [OprWithPos] -> [ExprWithPos] -> Tokens -> (ExprWithPos, Tokens)
+addOpr:: OprWithPos -> [OprWithPos] -> [ExprWithPos] -> ([OprWithPos], [ExprWithPos])
+makeTree:: [OprWithPos] -> [ExprWithPos] -> ExprWithPos
 
 
 
+
+parse prog = 
+    getExp (fst (parse_general (alexScanTokens prog)))
 
 parse_general [] = ((Create (AlexPn 0 0 0) Nil), [])
 parse_general toks = 
@@ -113,10 +104,9 @@ parse_general toks =
             ELSE p _ -> error (show p)
             ID p _ -> parse_normal_expr [] [] toks
             ASSIGN p _ -> error (show p)
-
-
-
-
+            FI p _ -> error (show p)
+            END p _ -> error (show p)
+            EOF p _ -> (Create p Nil, [])
 
 
 
@@ -143,10 +133,10 @@ parse_paren toks =
                 _ -> error (show (token_posn tok)) -- no closing bracket found
 
 
--- [let_expr, var_name, assign, expr1, in, expr2]
+-- [let_expr, var_name, assign, expr1, in, expr2 end]
 parse_LetIn toks = 
     case toks of
-        (LET plet _):((ID _ var_name):((ASSIGN pasgn _ ):toks_left1)) ->
+        (LET plet _):((ID _ var_name):((ASSIGN pasgn _ ):toks_left1))->
             if length toks_left1 < 3 then error (show pasgn)
             else 
                 let 
@@ -155,18 +145,20 @@ parse_LetIn toks =
                     if length toks_left2 < 1 then error (show (getPos expr_assign))
                     else if length toks_left2 < 2 then error (show (token_posn (head toks_left2)))
                     else case toks_left2 of 
-                        (IN _ _):toks_left3 -> 
+                        (IN p _):toks_left3 -> 
                             let 
                                 (expr_in, toks_left4) = parse_general toks_left3
                                 binding = fromList [(var_name, (getExp expr_assign))]
                             in
-                                (Create plet (LetIn binding (getExp expr_in)), toks_left4)
+                                if ((length toks_left4) > 0) && (head toks_left4) == (END (token_posn (head toks_left4)) "END")
+                                then   (Create plet (LetIn binding (getExp expr_in)), (tail toks_left4))
+                                else error ((show p) ++ show (head toks_left4)) -- expected end after in
                         _ -> error (show (token_posn (head toks_left2)))
         [] -> error "bug"
         _ -> error (show (token_posn (head toks)))
 
 
--- [if, expr1, then, exrp2, else expr3]
+-- [if, expr1, then, exrp2, else expr3 fi]
 parse_IfThenElse [] = error "bug"
 parse_IfThenElse toks = 
     if length toks <  6 then error (show (token_posn (head toks)))
@@ -187,29 +179,14 @@ parse_IfThenElse toks =
                                         expr_ifthenelse = 
                                             Create pif (IfThenElse (getExp expr_if) (getExp expr_then) (getExp expr_else))
                                     in
-                                        (expr_ifthenelse, toks_left6)
-                                _ -> error (show pthen)
+                                        if (length toks_left6) > 0 && (head toks_left6) == (FI (token_posn (head toks_left6)) "FI")
+                                        then (expr_ifthenelse, (tail toks_left6))
+                                        else error (show pelse) -- expected fi after else 
+                                _ -> error (show pthen)  
                     _ -> error (show pif)
         _ -> error (show (token_posn (head toks)))
 
     
-
-                                    
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 addOpr op oprs exprs = 
     case op of
@@ -373,10 +350,12 @@ parse_normal_expr oprs exprs toks =
             ELSE p s -> (makeTree oprs exprs, toks)
             RPAREN p s -> (makeTree oprs exprs, toks)
             IN p s -> (makeTree oprs exprs, toks)
+            FI p s -> (makeTree oprs exprs, toks)
+            END p s -> (makeTree oprs exprs, toks)
+            EOF p s -> (makeTree oprs exprs, toks)
 
             ASSIGN p s -> error (show p)
             
-
 
 
 

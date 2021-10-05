@@ -1,5 +1,5 @@
 {
-module Tokens_posn (Token(..), AlexPosn(..), alexScanTokens, token_posn) where
+module Lexer (Token(..), AlexPosn(..), alexScanTokens, token_posn) where
 }
 
 %wrapper "posn"
@@ -11,7 +11,7 @@ $digit = [0-9]
 tokens :-
 
     $white+				 ;
-    $digit+				 { tok (\p s -> INT p (read s)) }
+    $digit+				 { tok(\p s -> INT p (read s)) }
     "PLUS"               { tok(\p s -> PLUS p "PLUS") }
     "MINUS"              { tok(\p s -> MINUS p "MINUS") }
     "TIMES"              { tok(\p s -> TIMES p "TIMES") }
@@ -34,8 +34,10 @@ tokens :-
     then 				 { tok (\p s -> THEN p "then") }
     else 				 { tok (\p s -> ELSE p "else") }
     "="                  { tok (\p s -> ASSIGN p "=" )}
+    "fi"                 { tok (\p s -> FI p "FI" )}
+    "end"                { tok (\p s -> END p "END" )}
     @id                  { tok (\p s -> ID p s) }
-
+    "EOF"                  { tok (\p s -> EOF p "EOF") }
 
 {
 -- Each right-hand side has type :: AlexPosn -> String -> Token
@@ -67,7 +69,10 @@ data Token =
     THEN AlexPosn String |
     ELSE AlexPosn String |
     ID AlexPosn String |
-    ASSIGN AlexPosn String
+    ASSIGN AlexPosn String|
+    FI AlexPosn String |
+    END AlexPosn String |
+    EOF AlexPosn String
 	deriving (Eq,Show)
 
 token_posn (INT p _) = p
@@ -92,5 +97,8 @@ token_posn (THEN p _) = p
 token_posn (ELSE p _) = p
 token_posn (ID p _) = p
 token_posn (ASSIGN p _) = p
+token_posn (FI p _) = p
+token_posn (END p _) = p
+token_posn (EOF p _) = p
 
 }
