@@ -8,7 +8,7 @@ module BigInteger (add, mul, karatsuba) where
     mul::String -> String -> Int -> String
     karatsuba:: [Int] -> [Int] -> Int -> [Int]
 
-    fromString s = map digitToInt (reverse s)
+    fromString s = if foldl (&&) True (map isDigit s) then map digitToInt (reverse s) else error "string Invalid_Input_exception"
 
     removeTrailingZero:: String -> String
     removeTrailingZero "" = "0"

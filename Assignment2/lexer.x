@@ -37,7 +37,7 @@ tokens :-
     "fi"                 { tok (\p s -> FI p "FI" )}
     "end"                { tok (\p s -> END p "END" )}
     @id                  { tok (\p s -> ID p s) }
-    "EOF"                  { tok (\p s -> EOF p "EOF") }
+    "EOF"                { tok (\p s -> EOF p "EOF") }
 
 {
 -- Each right-hand side has type :: AlexPosn -> String -> Token

@@ -74,6 +74,7 @@ isBiOperator:: Token -> Bool
 isUniOperator:: Token -> Bool
 
 
+
 checkTok:: Prev -> Tokens -> Bool
 checkTok BIOPR [] = False
 checkTok UNIOPR [] = False
@@ -81,9 +82,25 @@ checkTok EXPRESSION [] = True
 checkTok prev toks = 
     case prev of
         NONE -> True
-        BIOPR -> not (isBiOperator (head toks) || isUniOperator (head toks))
-        UNIOPR -> not (isBiOperator (head toks))
-        EXPRESSION -> isBiOperator (head toks)
+        BIOPR -> if not (isBiOperator (head toks)) then True 
+                 else error ((show (token_posn (head toks))) ++ " expected expression after operator")
+        UNIOPR -> if not (isBiOperator (head toks)) then True
+                  else error ((show (token_posn (head toks))) ++ " expected expression after operator") 
+        EXPRESSION -> let 
+                          tok = (head toks) 
+                      in 
+                          case tok of
+                              INT _ _ -> False
+                              CONST _ _ -> False
+                              ID _ _ -> False
+                              LET _ _ -> False
+                              IF _ _ -> False
+                              NOT _ _ -> False
+                              NEGATE _ _ -> False
+                              _ -> True
+                              
+
+
 
 
 isBiOperator tok = 
@@ -120,27 +137,27 @@ parse_general toks =
             IF _ _  -> parse_IfThenElse toks
             LPAREN _ _ -> parse_normal_expr NONE [] [] toks
             INT p _ -> parse_normal_expr NONE [] [] toks
-            PLUS p _ -> error (show p)
-            MINUS p _ -> error (show p)
-            TIMES p _ -> error (show p)
+            PLUS p _ -> error ((show p) ++ " Expected Expression before PLUS") 
+            MINUS p _ -> error ((show p) ++ " Expected Expression before MINUS") 
+            TIMES p _ -> error ((show p) ++ " Expected Expression before TIMES") 
             NEGATE p _ -> parse_normal_expr NONE [] [] toks
-            EQUALS p _ -> error (show p)
-            LESSTHAN p _ -> error (show p)
+            EQUALS p _ -> error ((show p) ++ " Expected Expression before EQUALS") 
+            LESSTHAN p _ -> error ((show p) ++ " Expected Expression before EQUALS") 
             GREATERTHAN p _ -> error (show p)
             NOT p _ -> parse_normal_expr NONE [] [] toks
-            AND p _ -> error (show p)
-            OR p _ -> error (show p)
-            XOR p _ -> error (show p)
-            IMPLIES p _ -> error (show p)
+            AND p _ -> error ((show p) ++ "Expected Expression before AND") 
+            OR p _ -> error ((show p) ++ "Expected Expression before OR") 
+            XOR p _ -> error ((show p) ++ "Expected Expression before XOR") 
+            IMPLIES p _ -> error ((show p) ++ "Expected Expression before IMPLIES") 
             CONST p _ -> parse_normal_expr NONE [] [] toks
-            RPAREN p _ -> error (show p)
-            IN p _ -> error (show p)
-            THEN p _ -> error (show p)
-            ELSE p _ -> error (show p)
+            RPAREN p _ -> error ((show p) ++ "Expected LPAREN before RPAREN") 
+            IN p _ -> error ((show p) ++ "Expected let before in") 
+            THEN p _ -> error ((show p) ++ "Expected if before then") 
+            ELSE p _ -> error ((show p) ++ "Expected if then before else") 
             ID p _ -> parse_normal_expr NONE [] [] toks
-            ASSIGN p _ -> error (show p)
-            FI p _ -> error (show p)
-            END p _ -> error (show p)
+            ASSIGN p _ -> error ((show p) ++ "Expected let id before =")
+            FI p _ -> error ((show p) ++ "Expected if then else before fi")
+            END p _ -> error ((show p) ++ "Expected let in before end")
             EOF p _ -> (Create p Nil, [])
 
 
@@ -157,28 +174,28 @@ parse_paren toks =
                     let
                         (expr, toks_left) = parse_general (tail toks)
                     in
-                        if length toks_left < 1 then error (show p) -- no closing bracket found
+                        if length toks_left < 1 then error ((show p) ++ "No RPAREN found after LPAREN")
                         else
                             let 
                                 end_tok = nextToken toks_left
                             in
                                 case end_tok of
                                     RPAREN _ _ -> (expr, (tail toks_left))
-                                    _ -> error (show (token_posn end_tok)) -- no closing bracket found
-                _ -> error (show (token_posn tok)) -- no closing bracket found
+                                    _ -> error ((show p) ++ "No RPAREN found after LPAREN")
+                _ -> error (show (token_posn tok) ++ "No RPAREN found after LPAREN") 
 
 
 -- [let_expr, var_name, assign, expr1, in, expr2 end]
 parse_LetIn toks = 
     case toks of
         (LET plet _):((ID _ var_name):((ASSIGN pasgn _ ):toks_left1))->
-            if length toks_left1 < 3 then error (show pasgn)
+            if length toks_left1 < 3 then error ((show pasgn) ++ " Invalid Let in expression")
             else 
                 let 
                     (expr_assign, toks_left2) = parse_general toks_left1
                 in
-                    if length toks_left2 < 1 then error (show (getPos expr_assign))
-                    else if length toks_left2 < 2 then error (show (token_posn (head toks_left2)))
+                    if length toks_left2 < 1 then error ((show (getPos expr_assign)) ++ " Invalid Let in expression")
+                    else if length toks_left2 < 2 then error ((show (token_posn (head toks_left2))) ++ " Invalid Let in expression")
                     else case toks_left2 of 
                         (IN p _):toks_left3 -> 
                             let 
@@ -187,14 +204,14 @@ parse_LetIn toks =
                             in
                                 if ((length toks_left4) > 0) && (head toks_left4) == (END (token_posn (head toks_left4)) "END")
                                 then   (Create plet (LetIn binding (getExp expr_in)), (tail toks_left4))
-                                else error ((show p) ++ show (head toks_left4)) -- expected end after in
+                                else error ((show p) ++ " Expected end after in") -- expected end after in
                         _ -> error (show (token_posn (head toks_left2)))
-        [] -> error "bug"
+        [] -> error "bug in my code"
         _ -> error (show (token_posn (head toks)))
 
 
 -- [if, expr1, then, exrp2, else expr3 fi]
-parse_IfThenElse [] = error "bug"
+parse_IfThenElse [] = error "bug in my code"
 parse_IfThenElse toks = 
     if length toks <  6 then error (show (token_posn (head toks)))
     else case toks of
@@ -216,10 +233,10 @@ parse_IfThenElse toks =
                                     in
                                         if (length toks_left6) > 0 && (head toks_left6) == (FI (token_posn (head toks_left6)) "FI")
                                         then (expr_ifthenelse, (tail toks_left6))
-                                        else error (show pelse) -- expected fi after else 
-                                _ -> error (show pthen)  
-                    _ -> error (show pif)
-        _ -> error (show (token_posn (head toks)))
+                                        else error ((show pelse) ++ "expected fi after else")-- expected fi after else 
+                                _ -> error ((show pthen)  ++ " invalid if then else expression")
+                    _ -> error ((show pif) ++ " invalid if then else expression")
+        _ -> error ((show (token_posn (head toks))) ++ " invalid if then else expression")
 
     
 
@@ -238,14 +255,14 @@ addOpr op oprs exprs =
                     else
                         case top_opr of
                             PosUni p opr ->
-                                if (length exprs) < 1 then error (show p)
+                                if (length exprs) < 1 then error ((show p) ++ " expected expression to match with uniary operator")
                                 else 
                                     let 
                                         expr = Create p (Uni opr (getExp (head exprs)))
                                     in
                                         addOpr op (tail oprs) (expr:(tail exprs))
                             PosBin p opr -> 
-                                if (length exprs) < 2 then error (show p)
+                                if (length exprs) < 2 then error ((show p) ++ " expected 2 expressions to match with binary operator")
                                 else 
                                     let 
                                         expr1 = getExp (head exprs)
@@ -257,22 +274,22 @@ addOpr op oprs exprs =
                                 
 
 makeTree [] exprs = case exprs of 
-                        [] -> error "Unknown AlexPn"
+                        [] -> error " at unknown AlexPn"
                         [expr] -> expr
-                        _ -> error (show (getPos (last exprs)))
+                        _ -> error ((show (getPos (last exprs))) ++ " incomplete expression")
 
 makeTree oprs exprs =
     let
         opr = head oprs
     in
         case opr of
-            PosUni p op -> if (length exprs) < 1 then error (show p) 
+            PosUni p op -> if (length exprs) < 1 then error ((show p) ++ " expected expression to match with uniary operator")
                            else 
                                let
                                    expr = Create p (Uni op (getExp (head exprs)))
                                 in
                                     makeTree (tail oprs) (expr:(tail exprs))
-            PosBin p op -> if (length exprs) < 2 then error (show p)
+            PosBin p op -> if (length exprs) < 2 then error ((show p) ++ " expected expression to match with binary operator")
                            else
                                let
                                    expr1 = getExp (head exprs)
@@ -287,7 +304,7 @@ parse_normal_expr prev oprs exprs toks =
     let
         tok = nextToken toks
     in
-        if (not (checkTok prev toks)) then error (show (token_posn (head toks))) 
+        if (not (checkTok prev toks)) then error ((show (token_posn (head toks))) ++ " expected operator after expression")
         else
             case tok of
                 PLUS p s -> 
@@ -391,7 +408,7 @@ parse_normal_expr prev oprs exprs toks =
                 END p s -> (makeTree oprs exprs, toks)
                 EOF p s -> (makeTree oprs exprs, toks)
 
-                ASSIGN p s -> error (show p)
+                ASSIGN p s -> error ((show p) ++ "expected let id before =")
             
 
 
