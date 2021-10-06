@@ -33,6 +33,7 @@ data Expr = Nil |
             deriving (Eq,Show)
 
 data ExprWithPos = Create AlexPosn Expr deriving (Eq,Show)
+data Prev = EXPRESSION | BIOPR | UNIOPR | NONE
 
 getExp:: ExprWithPos -> Expr
 getExp exp = 
@@ -65,11 +66,45 @@ parse_LetIn:: Tokens -> (ExprWithPos, Tokens)
 parse_IfThenElse:: Tokens -> (ExprWithPos, Tokens)
 parse_paren:: Tokens -> (ExprWithPos, Tokens)
 
-parse_normal_expr:: [OprWithPos] -> [ExprWithPos] -> Tokens -> (ExprWithPos, Tokens)
+parse_normal_expr:: Prev -> [OprWithPos] -> [ExprWithPos] -> Tokens -> (ExprWithPos, Tokens)
 addOpr:: OprWithPos -> [OprWithPos] -> [ExprWithPos] -> ([OprWithPos], [ExprWithPos])
 makeTree:: [OprWithPos] -> [ExprWithPos] -> ExprWithPos
 
+isBiOperator:: Token -> Bool
+isUniOperator:: Token -> Bool
 
+
+checkTok:: Prev -> Tokens -> Bool
+checkTok BIOPR [] = False
+checkTok UNIOPR [] = False
+checkTok EXPRESSION [] = True
+checkTok prev toks = 
+    case prev of
+        NONE -> True
+        BIOPR -> not (isBiOperator (head toks) || isUniOperator (head toks))
+        UNIOPR -> not (isBiOperator (head toks))
+        EXPRESSION -> isBiOperator (head toks)
+
+
+isBiOperator tok = 
+    case tok of
+        PLUS _ _ -> True
+        MINUS p _ -> True
+        TIMES p _ -> True
+        EQUALS p _ -> True
+        LESSTHAN p _ -> True
+        GREATERTHAN p _ -> True
+        AND p _ -> True
+        OR p _ -> True
+        XOR p _ -> True
+        IMPLIES p _ -> True
+        _ -> False
+
+isUniOperator tok =
+    case tok of
+    NEGATE _ _ -> True
+    NOT _ _ -> True
+    _ -> False
 
 
 parse prog = 
@@ -83,26 +118,26 @@ parse_general toks =
         case tok of 
             LET _ _ -> parse_LetIn toks
             IF _ _  -> parse_IfThenElse toks
-            LPAREN _ _ -> parse_normal_expr [] [] toks
-            INT p _ -> parse_normal_expr [] [] toks
+            LPAREN _ _ -> parse_normal_expr NONE [] [] toks
+            INT p _ -> parse_normal_expr NONE [] [] toks
             PLUS p _ -> error (show p)
             MINUS p _ -> error (show p)
             TIMES p _ -> error (show p)
-            NEGATE p _ -> parse_normal_expr [] [] toks
+            NEGATE p _ -> parse_normal_expr NONE [] [] toks
             EQUALS p _ -> error (show p)
             LESSTHAN p _ -> error (show p)
             GREATERTHAN p _ -> error (show p)
-            NOT p _ -> parse_normal_expr [] [] toks
+            NOT p _ -> parse_normal_expr NONE [] [] toks
             AND p _ -> error (show p)
             OR p _ -> error (show p)
             XOR p _ -> error (show p)
             IMPLIES p _ -> error (show p)
-            CONST p _ -> parse_normal_expr [] [] toks
+            CONST p _ -> parse_normal_expr NONE [] [] toks
             RPAREN p _ -> error (show p)
             IN p _ -> error (show p)
             THEN p _ -> error (show p)
             ELSE p _ -> error (show p)
-            ID p _ -> parse_normal_expr [] [] toks
+            ID p _ -> parse_normal_expr NONE [] [] toks
             ASSIGN p _ -> error (show p)
             FI p _ -> error (show p)
             END p _ -> error (show p)
@@ -247,114 +282,116 @@ makeTree oprs exprs =
                                     makeTree (tail oprs) (expr:(tail (tail exprs)))
 
 
-parse_normal_expr oprs exprs [] = (makeTree oprs exprs, [])
-parse_normal_expr oprs exprs toks = 
+parse_normal_expr prev oprs exprs [] = (makeTree oprs exprs, [])
+parse_normal_expr prev oprs exprs toks = 
     let
         tok = nextToken toks
     in
-        case tok of
-            PLUS p s -> 
-                let 
-                    opr = PosBin p Plus
-                    (new_oprs, new_exprs) = addOpr opr oprs exprs
-                in
-                    parse_normal_expr new_oprs new_exprs (tail toks)
-            MINUS p s -> 
-                let 
-                    opr = PosBin p Minus
-                    (new_oprs, new_exprs) = addOpr opr oprs exprs
-                in
-                    parse_normal_expr new_oprs new_exprs (tail toks)
-            TIMES p s -> 
-                let 
-                    opr = PosBin p Times
-                    (new_oprs, new_exprs) = addOpr opr oprs exprs
-                in
-                    parse_normal_expr new_oprs new_exprs (tail toks)
-            NEGATE p s -> 
-                let 
-                    opr = PosUni p Negate
-                    (new_oprs, new_exprs) = addOpr opr oprs exprs
-                in
-                    parse_normal_expr new_oprs new_exprs (tail toks)
-            EQUALS p s -> 
-                let 
-                    opr = PosBin p Equals
-                    (new_oprs, new_exprs) = addOpr opr oprs exprs
-                in
-                    parse_normal_expr new_oprs new_exprs (tail toks)
-            LESSTHAN p s -> 
-                let 
-                    opr = PosBin p LessThan
-                    (new_oprs, new_exprs) = addOpr opr oprs exprs
-                in
-                    parse_normal_expr new_oprs new_exprs (tail toks)
-            GREATERTHAN p s -> 
-                let 
-                    opr = PosBin p GreaterThan
-                    (new_oprs, new_exprs) = addOpr opr oprs exprs
-                in
-                    parse_normal_expr new_oprs new_exprs (tail toks)
-            NOT p s -> 
-                let 
-                    opr = PosUni p Not
-                    (new_oprs, new_exprs) = addOpr opr oprs exprs
-                in
-                    parse_normal_expr new_oprs new_exprs (tail toks)
-            AND p s -> 
-                let 
-                    opr = PosBin p And
-                    (new_oprs, new_exprs) = addOpr opr oprs exprs
-                in
-                    parse_normal_expr new_oprs new_exprs (tail toks)
-            OR p s -> 
-                let 
-                    opr = PosBin p Or
-                    (new_oprs, new_exprs) = addOpr opr oprs exprs
-                in
-                    parse_normal_expr new_oprs new_exprs (tail toks)
-            XOR p s -> 
-                let 
-                    opr = PosBin p Xor
-                    (new_oprs, new_exprs) = addOpr opr oprs exprs
-                in
-                    parse_normal_expr new_oprs new_exprs (tail toks)
-            IMPLIES p s -> 
-                let 
-                    opr = PosBin p Implies
-                    (new_oprs, new_exprs) = addOpr opr oprs exprs
-                in
-                    parse_normal_expr new_oprs new_exprs (tail toks)
+        if (not (checkTok prev toks)) then error (show (token_posn (head toks))) 
+        else
+            case tok of
+                PLUS p s -> 
+                    let 
+                        opr = PosBin p Plus
+                        (new_oprs, new_exprs) = addOpr opr oprs exprs
+                    in
+                        parse_normal_expr BIOPR new_oprs new_exprs (tail toks)
+                MINUS p s -> 
+                    let 
+                        opr = PosBin p Minus
+                        (new_oprs, new_exprs) = addOpr opr oprs exprs
+                    in
+                        parse_normal_expr BIOPR new_oprs new_exprs (tail toks)
+                TIMES p s -> 
+                    let 
+                        opr = PosBin p Times
+                        (new_oprs, new_exprs) = addOpr opr oprs exprs
+                    in
+                        parse_normal_expr BIOPR new_oprs new_exprs (tail toks)
+                NEGATE p s -> 
+                    let 
+                        opr = PosUni p Negate
+                        (new_oprs, new_exprs) = addOpr opr oprs exprs
+                    in
+                        parse_normal_expr UNIOPR new_oprs new_exprs (tail toks)
+                EQUALS p s -> 
+                    let 
+                        opr = PosBin p Equals
+                        (new_oprs, new_exprs) = addOpr opr oprs exprs
+                    in
+                        parse_normal_expr BIOPR new_oprs new_exprs (tail toks)
+                LESSTHAN p s -> 
+                    let 
+                        opr = PosBin p LessThan
+                        (new_oprs, new_exprs) = addOpr opr oprs exprs
+                    in
+                        parse_normal_expr BIOPR new_oprs new_exprs (tail toks)
+                GREATERTHAN p s -> 
+                    let 
+                        opr = PosBin p GreaterThan
+                        (new_oprs, new_exprs) = addOpr opr oprs exprs
+                    in
+                        parse_normal_expr BIOPR new_oprs new_exprs (tail toks)
+                NOT p s -> 
+                    let 
+                        opr = PosUni p Not
+                        (new_oprs, new_exprs) = addOpr opr oprs exprs
+                    in
+                        parse_normal_expr UNIOPR new_oprs new_exprs (tail toks)
+                AND p s -> 
+                    let 
+                        opr = PosBin p And
+                        (new_oprs, new_exprs) = addOpr opr oprs exprs
+                    in
+                        parse_normal_expr BIOPR new_oprs new_exprs (tail toks)
+                OR p s -> 
+                    let 
+                        opr = PosBin p Or
+                        (new_oprs, new_exprs) = addOpr opr oprs exprs
+                    in
+                        parse_normal_expr BIOPR new_oprs new_exprs (tail toks)
+                XOR p s -> 
+                    let 
+                        opr = PosBin p Xor
+                        (new_oprs, new_exprs) = addOpr opr oprs exprs
+                    in
+                        parse_normal_expr BIOPR new_oprs new_exprs (tail toks)
+                IMPLIES p s -> 
+                    let 
+                        opr = PosBin p Implies
+                        (new_oprs, new_exprs) = addOpr opr oprs exprs
+                    in
+                        parse_normal_expr BIOPR new_oprs new_exprs (tail toks)
 
-            INT p x -> parse_normal_expr oprs ((Create p (Num x)):exprs) (tail toks)
-            CONST p x -> parse_normal_expr oprs ((Create p (Const x)):exprs) (tail toks)
-            ID p s -> parse_normal_expr oprs ((Create p (Id s)):exprs) (tail toks)
+                INT p x -> parse_normal_expr EXPRESSION oprs ((Create p (Num x)):exprs) (tail toks)
+                CONST p x -> parse_normal_expr EXPRESSION oprs ((Create p (Const x)):exprs) (tail toks)
+                ID p s -> parse_normal_expr EXPRESSION oprs ((Create p (Id s)):exprs) (tail toks)
 
-            LPAREN p s -> 
-                let
-                    (paren_expr, new_toks) = parse_paren toks
-                in
-                    parse_normal_expr oprs (paren_expr:exprs) (new_toks)
-            LET p s -> 
-                let
-                    (let_in_expr, new_toks) = parse_LetIn toks
-                in
-                    parse_normal_expr oprs (let_in_expr:exprs) (new_toks)
-            IF p s -> 
-                let
-                    (if_then_else_expr, new_toks) = parse_IfThenElse toks
-                in
-                    parse_normal_expr oprs (if_then_else_expr:exprs) (new_toks)
+                LPAREN p s -> 
+                    let
+                        (paren_expr, new_toks) = parse_paren toks
+                    in
+                        parse_normal_expr EXPRESSION oprs (paren_expr:exprs) (new_toks)
+                LET p s -> 
+                    let
+                        (let_in_expr, new_toks) = parse_LetIn toks
+                    in
+                        parse_normal_expr EXPRESSION oprs (let_in_expr:exprs) (new_toks)
+                IF p s -> 
+                    let
+                        (if_then_else_expr, new_toks) = parse_IfThenElse toks
+                    in
+                        parse_normal_expr EXPRESSION oprs (if_then_else_expr:exprs) (new_toks)
 
-            THEN p s -> (makeTree oprs exprs, toks)
-            ELSE p s -> (makeTree oprs exprs, toks)
-            RPAREN p s -> (makeTree oprs exprs, toks)
-            IN p s -> (makeTree oprs exprs, toks)
-            FI p s -> (makeTree oprs exprs, toks)
-            END p s -> (makeTree oprs exprs, toks)
-            EOF p s -> (makeTree oprs exprs, toks)
+                THEN p s -> (makeTree oprs exprs, toks)
+                ELSE p s -> (makeTree oprs exprs, toks)
+                RPAREN p s -> (makeTree oprs exprs, toks)
+                IN p s -> (makeTree oprs exprs, toks)
+                FI p s -> (makeTree oprs exprs, toks)
+                END p s -> (makeTree oprs exprs, toks)
+                EOF p s -> (makeTree oprs exprs, toks)
 
-            ASSIGN p s -> error (show p)
+                ASSIGN p s -> error (show p)
             
 
 
