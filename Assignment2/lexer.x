@@ -1,5 +1,5 @@
 {
-module Lexer (Token(..), AlexPosn(..), alexScanTokens, token_posn) where
+module MyLexer (Token(..), AlexPosn(..), alexScanTokens, token_posn) where
 }
 
 %wrapper "posn"
@@ -34,10 +34,10 @@ tokens :-
     then 				 { tok (\p s -> THEN p "then") }
     else 				 { tok (\p s -> ELSE p "else") }
     "="                  { tok (\p s -> ASSIGN p "=" )}
-    "fi"                 { tok (\p s -> FI p "FI" )}
-    "end"                { tok (\p s -> END p "END" )}
-    @id                  { tok (\p s -> ID p s) }
+    "fi"                 { tok (\p s -> FI p "fi" )}
+    "end"                { tok (\p s -> END p "end" )}
     "EOF"                { tok (\p s -> EOF p "EOF") }
+    @id                  { tok (\p s -> ID p s) }
 
 {
 -- Each right-hand side has type :: AlexPosn -> String -> Token
@@ -73,8 +73,10 @@ data Token =
     FI AlexPosn String |
     END AlexPosn String |
     EOF AlexPosn String
-	deriving (Eq,Show)
+	deriving (Eq, Show)
 
+
+                
 token_posn (INT p _) = p
 token_posn (PLUS p _) = p
 token_posn (MINUS p _) = p
