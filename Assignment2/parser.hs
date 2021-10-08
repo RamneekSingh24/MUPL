@@ -127,7 +127,7 @@ module Parser (parse, preOrder, myShow) where
             IfThenElse expr1 expr2 expr3 -> [NodeIfThenElse] ++ [NodeIfExp] ++ (preOrder expr1) ++
                                                 [NodeThenExp] ++ (preOrder expr2) ++ [NodeElseExp] ++ (preOrder expr3)
             LetIn (var_name, expr1) expr2 -> [NodeLetIn] ++ [NodeLetExp] ++ [NodeVariableBinding] ++ [NodeBindingName var_name] 
-                                                ++ [NodeBindingVal] ++ (preOrder expr1) ++ (preOrder expr2)
+                                                ++ [NodeBindingVal] ++ (preOrder expr1) ++ [NodeInExp] ++ (preOrder expr2)
 
 
 
@@ -155,8 +155,6 @@ module Parser (parse, preOrder, myShow) where
                                 NEGATE _ _ -> False
                                 _ -> True
                                 
-
-
 
 
     isBiOperator tok = 
@@ -260,7 +258,7 @@ module Parser (parse, preOrder, myShow) where
                                 in
                                     if ((length toks_left4) > 0) && (head toks_left4) == (END (token_posn (head toks_left4)) "end")
                                     then   (Create plet (LetIn binding (getExp expr_in)), (tail toks_left4))
-                                    else error ((genError p) ++ " Expected end after in") -- expected end after in
+                                    else error ((genError p) ++ " Expected end after in")
                             _ -> error (genError (token_posn (head toks_left2)))
             [] -> error "bug in my code"
             _ -> error (genError (token_posn (head toks)))

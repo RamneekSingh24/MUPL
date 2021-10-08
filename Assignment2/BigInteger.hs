@@ -1,6 +1,6 @@
 -- TODO: add exception as per specification
 
-module BigInteger (add, mul, karatsuba) where
+module BigInteger (add, mul, karatsuba, fromString, toString) where
     import Data.Char
     fromString:: String -> [Int]
     toString:: [Int] -> String
