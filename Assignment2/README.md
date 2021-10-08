@@ -58,7 +58,7 @@ Bi Plus (Num 5) (LetIn ("x",Num 5) (Bi Plus (Bi Times (Id "x") (Num 10)) (Uni Ne
 make
 ./a2 prog.txt
 [LET "let",ID "x",ASSIGN "=",INT 5,IN "in",LET "let",ID "y",ASSIGN "=",INT 10,IN "in",IF "if",ID "x",PLUS "PLUS",ID "y",EQUALS "EQUALS",INT 15,THEN "then",INT 66,ELSE "else",INT 77,FI "fi",END "end",END "end",EOF "EOF"]
-[NodeLetIn,NodeLetExp,NodeVariableBinding,NodeBindingName "x",NodeBindingVal,LeafNum 5,NodeLetIn,NodeLetExp,NodeVariableBinding,NodeBindingName "y",NodeBindingVal,LeafNum 10,NodeIfThenElse,NodeIfExp,NodeBinOp Equals,NodeBinOp Plus,LeafVar "x",LeafVar "y",LeafNum 15,NodeThenExp,LeafNum 66,NodeElseExp,LeafNum 77]
+[NodeLetIn,NodeLetExp,NodeVariableBinding,NodeBindingName "x",NodeBindingVal,LeafNum 5,NodeInExp,NodeLetIn,NodeLetExp,NodeVariableBinding,NodeBindingName "y",NodeBindingVal,LeafNum 10,NodeInExp,NodeIfThenElse,NodeIfExp,NodeBinOp Equals,NodeBinOp Plus,LeafVar "x",LeafVar "y",LeafNum 15,NodeThenExp,LeafNum 66,NodeElseExp,LeafNum 77]
 
 make clean
 ```
