@@ -36,7 +36,7 @@ karatsuba (fromString "12344555555555") (fromString "12343455561234142") 10
 
 
 ### Parser module
-- See bnf.txt for grammer of language.
+- See ebnf.txt for grammer of language.
 - parse:: String -> Expr, Takes in a program as input and returns the AST. 
 - Parsing a file according to assignment specs:
   ```bash
