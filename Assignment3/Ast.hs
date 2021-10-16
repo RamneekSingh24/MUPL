@@ -14,10 +14,13 @@ data BinOp = Plus | Minus | Times | Equals | LessThan | GreaterThan | And | Or |
 data Type = IntType | BoolType |  CurryExpr Type Type 
                 deriving (Eq,Show)
 
-data Lambda = Lambda Id Type Expr
-                deriving (Eq,Show)
+
 
 data FunApp = FunApp Id Expr
+                deriving (Eq,Show)
+
+
+data Lambda = Lambda Id Type Expr
                 deriving (Eq,Show)
 
 data NamedFun = NamedFun Id Id Type Type Expr
