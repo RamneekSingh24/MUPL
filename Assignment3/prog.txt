@@ -1,0 +1,10 @@
+let n:= 5
+in
+	let f:= fn (x::int) => n*x done
+	in
+		let n:= 8
+		in 
+			(f n)
+		end
+	end
+end;

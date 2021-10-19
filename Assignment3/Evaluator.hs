@@ -3,11 +3,12 @@ module Evaluator (eval) where
 import Ast
 import Data.Map
 import Parser
+import Debug.Trace
 
 type VarBindings = Map String Expr
 
 
-eval expr = evalExpr expr empty
+eval expr = evalExpr expr empty 
 
 
 -- data Expr =
@@ -29,37 +30,43 @@ evalExpr :: Expr -> VarBindings -> Expr
 
 getInt:: Expr -> Integer
 getBool:: Expr -> Bool
-getLambda:: Expr -> Lambda
-getNamedFun:: Expr -> NamedFun
+
+
 
 getInt expr =
     case expr of 
         IntConst x -> x
-        _ -> error "type checker bug"
+        _ ->  error "type checker bug"
 
 getBool expr =
     case expr of 
         BoolConst b -> b
         _ -> error "type checker bug"
 
-getLambda expr =
-    case expr of
-        LambdaExpr x y z -> Lambda x y z
-        _ -> error "type checker bug"
 
-getNamedFun expr =
-    case expr of 
-        NamedFunExpr a b c d e -> NamedFun a b c d e
-        _ -> error "type checker bug"
+
+
+-- performSubstitution:: Expr VarBindings -> Expr
+-- performSubstitution expr binds =
+--     case expr of
+--         LambdaExpr id typ expr -> 
+--             LambdaExpr id typ (performSubstitution expr)
+--         NamedFun fun_id var_id typ1 typ2 expr -> 
+--             NamedFun fun_id var_id typ1 typ2 (performSubstitution expr)
+        
+
+
+
 
 
 
 evalExpr expr binds =
     case expr of
+
         IntConst _ -> expr
         BoolConst _ -> expr
-        LambdaExpr _ _ _ -> expr
-        NamedFunExpr _ _ _ _ _ -> expr
+        LambdaExpr a b c closure ->  LambdaExpr a b c (union closure binds)
+        NamedFunExpr a b c d e closure -> NamedFunExpr a b c d e (union closure binds)
 
         BinExpr op expr1 expr2 ->
             case op of 
@@ -92,32 +99,53 @@ evalExpr expr binds =
                 evalExpr expr_in new_binds
 
         VarExpr id ->
-            findWithDefault (error ("Unknown Variable: type checker bug" ++ id)) id binds
+             findWithDefault (error ("Unknown Variable: type checker bug " ++ id)) id binds
         
         FunAppExpr fun_id inp_expr ->
             let
                 fun = findWithDefault (error ("Unknown Variable: type checker bug" ++ fun_id)) fun_id binds
             in
                 case fun of
-                    LambdaExpr a b c -> evalExpr (LambdaFunAppExpr a b c  inp_expr) binds
-                    NamedFunExpr a b c d e -> evalExpr (NamedFunAppExpr a b c d e inp_expr) binds
+                    LambdaExpr id typ expr1 closure -> 
+                        let
+                            inp_val =  evalExpr inp_expr binds
+                        in  
+                            evalExpr (LambdaFunAppExpr id typ expr1 inp_val empty) (insert id inp_val closure)
+                            
+                    NamedFunExpr fun_id inp_id t1 t2 fun_expr closure ->
+                        let
+                            inp_val = evalExpr inp_expr binds
+                        in
+                            evalExpr (NamedFunAppExpr fun_id inp_id t1 t2 fun_expr inp_val empty) (insert inp_id inp_val closure)
+                        
                     _ -> error "not a function, type checker bug"
             
-        LambdaFunAppExpr inp_id _ lambda_expr inp_expr ->
+        LambdaFunAppExpr inp_id _ lambda_expr inp_expr closure ->
             let 
-                inp_val = evalExpr inp_expr binds -- call by value!
+                inp_val =  evalExpr inp_expr binds -- call by value!
                 new_binds = insert inp_id inp_val binds
             in
-                evalExpr lambda_expr new_binds
+                if closure /= empty then error "Function evaluation with non-empty closure" 
+                else evalExpr lambda_expr new_binds
 
-        NamedFunAppExpr fun_id inp_id t1 t2 fun_expr inp_expr ->
+        NamedFunAppExpr fun_id inp_id t1 t2 fun_expr inp_expr closure ->
             let
-                new_binds1 = insert fun_id (NamedFunExpr fun_id inp_id t1 t2 fun_expr) binds
-                inp_val = evalExpr inp_expr new_binds1 -- call by value!
+                inp_val = evalExpr inp_expr binds -- call by value!
+                new_binds1 = insert fun_id (NamedFunExpr fun_id inp_id t1 t2 fun_expr closure) binds
                 new_binds2 = insert inp_id inp_val new_binds1
             in
-                evalExpr fun_expr new_binds2
+                if  closure /= empty then error "Function evaluation with non-empty closure" else  evalExpr fun_expr new_binds2
+
+        GeneralAppExpr fun_expr inp_expr ->
+            let
+                fun_val = evalExpr fun_expr binds 
+                inp_val = evalExpr inp_expr binds -- Call by value + lazy evaluation!
+            in
+                case fun_val of 
+                    VarExpr id -> evalExpr (FunAppExpr id inp_val) binds
+                    LambdaExpr a b c cls -> evalExpr (LambdaFunAppExpr a b c inp_val empty) (union cls binds)
+                    NamedFunExpr a b c d e cls  -> evalExpr (NamedFunAppExpr a b c d e inp_val empty) (union cls binds)
+                    _ -> error "Invalid function application"
+
+                    
             
-
-
-        

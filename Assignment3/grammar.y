@@ -2,6 +2,7 @@
 module Parser where
 import Ast
 import Lexer
+import Data.Map
 }
 
 %name parser
@@ -25,7 +26,7 @@ import Lexer
        "&&"    { AND $$ }
        "||"    { OR $$ }
        "^"     { XOR $$ }
-       "=>"    { IMPLIES $$ }
+       --"=>"    { IMPLIES $$ }
        -- ite
        "if"    { IF $$ }
        "then"  { THEN $$ }
@@ -40,7 +41,7 @@ import Lexer
        "false" { FALSE $$ }
        "true"  { TRUE $$ }
        "fn"    { LAMBDA $$ }
-       ":=>"   { MAP $$ }
+       "=>"   { MAP $$ }
        "->"    { ARROW $$ }
        "fun"   { DEF $$ }
        "done"  { DONE $$ }
@@ -94,11 +95,12 @@ Expr
     | Expr "=>" Expr                         { BinExpr Implies $1 $3 }
 
     -- functionals 
-    |  "(" var Expr ")"                                                         { FunAppExpr $2 $3 }
-    | "fn" "(" var "::" Type ")" ":=>" Expr "done"                              { LambdaExpr $3 $5 $8 }
-    |  "(" "fn" "(" var "::" Type ")" ":=>" Expr "done" Expr ")"                {LambdaFunAppExpr $4 $6 $9 $11}
-    | "fun" var "(" var "::" Type ")" "::" Type ":=>" Expr "done"               { NamedFunExpr $2 $4 $6 $9 $11 }
-    | "(" "fun" var "(" var "::" Type ")" "::" Type ":=>" Expr "done" Expr ")"  { NamedFunAppExpr $3 $5 $7 $10 $12 $14 }
+    |  "(" var Expr ")"                                                        { FunAppExpr $2 $3 }
+    | "fn" "(" var "::" Type ")" "=>" Expr "done"                              { LambdaExpr $3 $5 $8 empty }
+    |  "(" "fn" "(" var "::" Type ")" "=>" Expr "done" Expr ")"                { LambdaFunAppExpr $4 $6 $9 $11 empty }
+    | "fun" var "(" var "::" Type ")" "::" Type "=>" Expr "done"               { NamedFunExpr $2 $4 $6 $9 $11 empty }
+    | "(" "fun" var "(" var "::" Type ")" "::" Type "=>" Expr "done" Expr ")"  { NamedFunAppExpr $3 $5 $7 $10 $12 $14 empty }
+    | "(" Expr Expr ")"                                                        { GeneralAppExpr  $2 $3 }
 
     -- specials
     | "let" Decl "in" Expr "end"             { Let $2 $4 }

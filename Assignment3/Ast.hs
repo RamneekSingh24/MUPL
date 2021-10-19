@@ -1,6 +1,9 @@
 module Ast where
+import Data.Map
 
 type Id = String
+
+type Closure = Map Id Expr
 
 data VarDecl = Decl Id Expr
         deriving (Eq,Show)
@@ -14,18 +17,6 @@ data BinOp = Plus | Minus | Times | Equals | LessThan | GreaterThan | And | Or |
 data Type = IntType | BoolType |  CurryExpr Type Type 
                 deriving (Eq,Show)
 
-
-
-data FunApp = FunApp Id Expr
-                deriving (Eq,Show)
-
-
-data Lambda = Lambda Id Type Expr
-                deriving (Eq,Show)
-
-data NamedFun = NamedFun Id Id Type Type Expr
-                deriving (Eq, Show)
-
 data Expr =
              BinExpr BinOp Expr Expr
            | UnExpr UnOp Expr
@@ -34,11 +25,12 @@ data Expr =
            | BoolConst Bool
            | IntConst Integer
            | VarExpr Id
-           | LambdaExpr Id Type Expr
-           | NamedFunExpr Id Id Type Type Expr
+           | LambdaExpr Id Type Expr Closure
+           | NamedFunExpr Id Id Type Type Expr Closure
            | FunAppExpr Id Expr
-           | LambdaFunAppExpr Id Type Expr Expr
-           | NamedFunAppExpr Id Id Type Type Expr Expr
+           | LambdaFunAppExpr Id Type Expr Expr Closure
+           | NamedFunAppExpr Id Id Type Type Expr Expr Closure
+           | GeneralAppExpr Expr Expr 
         deriving (Eq,Show)
 
 

@@ -1,0 +1,5 @@
+let g := (fn (z::int) => (fn (x::int) => fn (y::int) => (100*z + 10*x + y) done done 4) done)
+in
+((g 1) 2) 
+end;
+

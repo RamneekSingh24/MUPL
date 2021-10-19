@@ -1,4 +1,8 @@
-let fibo := fn (n::int) :=> (fun fibo (n::int)::int :=> if n < 1 then 0 else if n = 1 then 1 else (fibo (n-1))+(fibo (n-2)) fi fi done n) done
+let fibo := fn (n::int) => (fun fibo (n::int)::int => if n < 1 then 0 else if n = 1 then 1 else (fibo (n-1))+(fibo (n-2)) fi fi done n) done
 in
-(fibo 30)
+let fact := fn (n::int) =>
+	(fun fact (n::int)::int => if n = 0 then 1 else (fact (n-1))*n fi done n) done
+in
+( fact ((fibo 35)) )
+end
 end;

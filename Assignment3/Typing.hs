@@ -126,14 +126,14 @@ checkAndGetType expr binds =
 
         VarExpr id -> findWithDefault (error ("Unknown Variable" ++ id)) id binds
 
-        LambdaExpr param_id param_type expr1 ->
+        LambdaExpr param_id param_type expr1 closure ->
             let
                 new_binds = insert param_id param_type binds
                 return_type = checkAndGetType expr1 new_binds
             in
                 CurryExpr param_type return_type
 
-        NamedFunExpr fun_id param_id param_type return_type fun_expr ->
+        NamedFunExpr fun_id param_id param_type return_type fun_expr closure ->
             let
                 new_binds1 = insert fun_id (CurryExpr param_type return_type) binds
                 new_binds2 = insert param_id param_type new_binds1
@@ -144,7 +144,7 @@ checkAndGetType expr binds =
 
         FunAppExpr fun_id expr1 ->
             let
-                fun_type = findWithDefault (error ("Unknown Variable" ++ fun_id)) fun_id binds
+                fun_type = findWithDefault (error ("Unknown Variable " ++ fun_id)) fun_id binds
                 t1 = checkAndGetType expr1 binds
             in
                 case fun_type of
@@ -153,7 +153,7 @@ checkAndGetType expr binds =
                         else error ("Invalid type applied to function: " ++ fun_id)
                     _ -> error (fun_id ++ " is not a function")
         
-        LambdaFunAppExpr id id_type fun_expr inp_expr ->
+        LambdaFunAppExpr id id_type fun_expr inp_expr closure ->
             let
                 inp_type = checkAndGetType inp_expr binds
                 new_binds = insert id id_type binds  -- Haskell is Lazy!
@@ -161,17 +161,28 @@ checkAndGetType expr binds =
                 if inp_type == id_type then checkAndGetType fun_expr new_binds
                 else error ("Invalid type applied to Lambda function")
 
-        NamedFunAppExpr fun_id param_id param_type return_type fun_expr inp_expr ->
+        NamedFunAppExpr fun_id param_id param_type return_type fun_expr inp_expr closure ->
             let
                 inp_type = checkAndGetType inp_expr binds
-                new_binds1 = insert param_id param_type binds
-                new_binds2 = insert fun_id (CurryExpr param_type return_type) new_binds1
+                new_binds1 = insert fun_id (CurryExpr param_type return_type) binds
+                new_binds2 = insert param_id param_type new_binds1
                 evaluated_return_type = checkAndGetType fun_expr new_binds2
             in
                 if inp_type == param_type then
                     if return_type == evaluated_return_type then return_type
                     else error "Given return type and evaluated return type don't match"
                 else error ("Invalid type applied to function: " ++ fun_id)
+
+        GeneralAppExpr fun_expr inp_expr ->
+            let 
+                fun_type = checkAndGetType fun_expr binds
+                inp_type = checkAndGetType inp_expr binds
+            in
+                case fun_type of 
+                    CurryExpr param_type rtn_type ->
+                        if (param_type == inp_type) then rtn_type
+                        else error ("Invalid type applied to function")
+                    _ -> error ("Invalid function application")
 
 
 

@@ -40,7 +40,7 @@ tokens :-
   -- atoms
   "false"                               { \p s -> FALSE s }
   "true"                                { \p s -> TRUE s }
-  ":=>"                                 { \p s -> MAP s }
+  "=>"                                 { \p s -> MAP s }
   "->"                                  { \p s -> ARROW s }
   "fn"                                  { \p s -> LAMBDA s }
   "fun"                                 { \p s -> DEF s }
