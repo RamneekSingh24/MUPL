@@ -96,10 +96,10 @@ Expr
 
     -- functionals 
     |  "(" var Expr ")"                                                        { FunAppExpr $2 $3 }
-    | "fn" "(" var "::" Type ")" "=>" Expr "done"                              { LambdaExpr $3 $5 $8 empty }
-    |  "(" "fn" "(" var "::" Type ")" "=>" Expr "done" Expr ")"                { LambdaFunAppExpr $4 $6 $9 $11 empty }
-    | "fun" var "(" var "::" Type ")" "::" Type "=>" Expr "done"               { NamedFunExpr $2 $4 $6 $9 $11 empty }
-    | "(" "fun" var "(" var "::" Type ")" "::" Type "=>" Expr "done" Expr ")"  { NamedFunAppExpr $3 $5 $7 $10 $12 $14 empty }
+    | "fn" "(" var "::" Type ")" "=>" Expr "end"                              { LambdaExpr $3 $5 $8 empty }
+    |  "(" "fn" "(" var "::" Type ")" "=>" Expr "end" Expr ")"                { LambdaFunAppExpr $4 $6 $9 $11 empty }
+    | "fun" var "(" var "::" Type ")" "::" Type "=>" Expr "end"               { NamedFunExpr $2 $4 $6 $9 $11 empty }
+    | "(" "fun" var "(" var "::" Type ")" "::" Type "=>" Expr "end" Expr ")"  { NamedFunAppExpr $3 $5 $7 $10 $12 $14 empty }
     | "(" Expr Expr ")"                                                        { GeneralAppExpr  $2 $3 }
 
     -- specials

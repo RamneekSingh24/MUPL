@@ -124,7 +124,7 @@ checkAndGetType expr binds =
 
         IntConst  _ -> IntType
 
-        VarExpr id -> findWithDefault (error ("Unknown Variable" ++ id)) id binds
+        VarExpr id -> findWithDefault (error ("Unknown Variable " ++ id)) id binds
 
         LambdaExpr param_id param_type expr1 closure ->
             let

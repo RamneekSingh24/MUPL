@@ -3,7 +3,7 @@ module Evaluator (eval) where
 import Ast
 import Data.Map
 import Parser
-import Debug.Trace
+
 
 type VarBindings = Map String Expr
 
@@ -99,11 +99,11 @@ evalExpr expr binds =
                 evalExpr expr_in new_binds
 
         VarExpr id ->
-             findWithDefault (error ("Unknown Variable: type checker bug " ++ id)) id binds
+             findWithDefault (error ("Unknown Variable: " ++ id)) id binds
         
         FunAppExpr fun_id inp_expr ->
             let
-                fun = findWithDefault (error ("Unknown Variable: type checker bug" ++ fun_id)) fun_id binds
+                fun = findWithDefault (error ("Unknown Variable: " ++ fun_id)) fun_id binds
             in
                 case fun of
                     LambdaExpr id typ expr1 closure -> 
@@ -118,7 +118,7 @@ evalExpr expr binds =
                         in
                             evalExpr (NamedFunAppExpr fun_id inp_id t1 t2 fun_expr inp_val empty) (insert inp_id inp_val closure)
                         
-                    _ -> error "not a function, type checker bug"
+                    _ -> error "not a function"
             
         LambdaFunAppExpr inp_id _ lambda_expr inp_expr closure ->
             let 

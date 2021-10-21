@@ -3,6 +3,6 @@ in
 let fact := fn (n::int) =>
 	(fun fact (n::int)::int => if n = 0 then 1 else (fact (n-1))*n fi done n) done
 in
-( fact ((fibo 35)) )
+( ((fibo 30)) )
 end
 end;

@@ -1,5 +1,12 @@
-let g := (fn (z::int) => (fn (x::int) => fn (y::int) => (100*z + 10*x + y) done done 4) done)
+let outerSpace := 0
 in
-((g 1) 2) 
+	let g := fn (inaa::int) => fn (inbb::int) => fn (incc::int) => ( fun namiSwan (sexy::int) :: int => (fun namiSwanZwei (sexyZwei::int) :: int => (fn (dbaby::int) => outerSpace + inaa*10 + 100*inbb + 1000*incc + 10000*sexy + 100000*sexyZwei + 1000000*dbaby end 6) end 5) end 4 ) end end end
+	in
+		let outerSpace := 1010
+		in
+			(((g 1) 2) 3)
+		end
+	end
 end;
+
 
