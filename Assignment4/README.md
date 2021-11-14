@@ -1,9 +1,17 @@
+Written in gnu-prolog
+If interpreter doesn't load the file, please change name of file and load.
+
+For q2 Co-ordinates used are-  
+
+![](2021-11-11-03-40-32.png)
+
+
+Please restart prolog interpreter after running once.
+
+
+Example-
 ```bash
-| ?- [rikudo], notrace, solve(36, [[3,-3,2,-3],[0,-3,-1,-2],[-1,-1,0,-1],[-2,0,-1,0],[1,1,2,1]],[[3,-2,1],[1,-3,5],[1,-2,9],[-1,1,14],[0,2,16],[1,-1,19], [3,-1,22], [1,2,26], [-2,2,31],[-3,2,32], [-2,-1,36]]).
-The debugger is switched off
-compiling /rikudo.pl for byte code...
-/rikudo.pl compiled, 156 lines read - 14771 bytes written, 11 ms
-The debugger is switched off
+| ?- 
 1 at (3, -2)
 2 at (2, -2)
 3 at (3, -3)
@@ -43,14 +51,8 @@ The debugger is switched off
 execution aborted
 | ?- 
 ```
-
-Co-ordinates used.
-
-![](2021-11-11-03-40-32.png)
-
 ![](2021-11-11-03-43-04.png)
 
-> Forgot to take ss on http://www.rikudo-puzzle.com/ :(
 
 
 

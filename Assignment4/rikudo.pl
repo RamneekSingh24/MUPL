@@ -1,3 +1,5 @@
+
+
 :- dynamic(linked/4).
 :- dynamic(placedAt/3).
 :- dynamic(adj/4).
@@ -7,7 +9,6 @@ bound(19, 1).
 bound(37, 3).
 bound(61, 5).
 bound(91, 7).
-
 
 inBounds(X, Y, N) :-
     bound(N, R),
@@ -36,7 +37,7 @@ solve(N, Links, Prefilled) :-
     NN is N + 1,
     addLinks(Links),
     fill(Prefilled),
-    place(1, NN).
+    place(1, NN), abort.
 
 
 place(1, N) :- placedAt(_, _, 1), place(2, N).
