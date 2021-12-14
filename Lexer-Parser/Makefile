@@ -6,3 +6,5 @@ all:
 
 clean:
 	rm -rf *.o *.hi *-e MyLexer.hs a2 
+
+

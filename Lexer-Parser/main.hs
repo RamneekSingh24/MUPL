@@ -8,8 +8,6 @@ import MyLexer
 
 
 
-
-
 main = do
         args <- getArgs 
         if (length args) == 1 then do

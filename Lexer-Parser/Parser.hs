@@ -261,7 +261,7 @@ module Parser (parse, preOrder, myShow) where
                                     else error ((genError p) ++ " Expected end after in")
                             _ -> error (genError (token_posn (head toks_left2)))
             [] -> error "bug in my code"
-            _ -> error (genError (token_posn (head toks)))
+            _ -> error ((genError (token_posn (head toks))) ++ " Invalid Let in expression")
 
 
     -- [if, expr1, then, exrp2, else expr3 fi]
@@ -287,7 +287,7 @@ module Parser (parse, preOrder, myShow) where
                                         in
                                             if (length toks_left6) > 0 && (head toks_left6) == (FI (token_posn (head toks_left6)) "fi")
                                             then (expr_ifthenelse, (tail toks_left6))
-                                            else error ((genError pelse) ++ "expected fi after else")-- expected fi after else 
+                                            else error ((genError pelse) ++ "expected fi after else")
                                     _ -> error ((genError pthen)  ++ " invalid if then else expression")
                         _ -> error ((genError pif) ++ " invalid if then else expression")
             _ -> error ((genError (token_posn (head toks))) ++ " invalid if then else expression")

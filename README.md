@@ -1,1 +1,31 @@
-# COL765
+# MUPL
+
+Lexer, parser, type-checker and evaluator of a small made up programming language.
+
+---
+
+## Language syntax
+
+num := [0-9]+
+var := [a-zA-z]+
+
+expr := num |
+        var |
+        TRUE |
+        FALSE |
+        expr PLUS expr |
+        expr MINUS expr |
+        expr TIMES expr |
+        expr EQUALS expr |
+        expr LESSTHAN expr |
+        expr GREATERTHAN expr |
+        NEGATE expr |
+        NOT expr |
+        expr AND expr |
+        expr OR expr |
+        expr XOR expr |
+        expr IMPLES expr |
+        LPAREN expr RPAREN |
+        let var = expr in expr end |
+        if expr then expr else expr fi 
+

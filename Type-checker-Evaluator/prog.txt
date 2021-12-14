@@ -1,6 +1,6 @@
 let n:= 5
 in
-	let f:= fn (x::int) => n*x done
+	let f:= fn (x::int) => n*x end
 	in
 		let n:= 8
 		in 

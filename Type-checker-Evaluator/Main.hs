@@ -15,7 +15,7 @@ main = do
             putStrLn (show (getType (parse contents)))
             putStrLn (show (eval (parse contents)))
         else do
-            print $ "Invalid useage. Please run using ./a2 <file-name>"
+            print $ "Invalid useage. Please run using ./main <file-name>"
             
 
 

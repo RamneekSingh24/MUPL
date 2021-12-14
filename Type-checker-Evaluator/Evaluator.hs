@@ -77,7 +77,7 @@ evalExpr expr binds =
                 GreaterThan -> BoolConst ((getInt (evalExpr expr1 binds)) > (getInt (evalExpr expr2 binds)))
                 LessThan -> BoolConst ((getInt (evalExpr expr1 binds)) < (getInt (evalExpr expr2 binds)))
                 Or -> BoolConst ((getBool (evalExpr expr1 binds)) || (getBool (evalExpr expr2 binds)))
-                And -> BoolConst ((getBool (evalExpr expr1 binds)) || (getBool (evalExpr expr2 binds)))
+                And -> BoolConst ((getBool (evalExpr expr1 binds)) && (getBool (evalExpr expr2 binds)))
                 Xor -> BoolConst ((getBool (evalExpr expr1 binds)) /= (getBool (evalExpr expr2 binds)))  -- Xor = not equals(\=) for booleans
                 Implies -> BoolConst ((not (getBool (evalExpr expr1 binds))) || (getBool (evalExpr expr2 binds))) -- Implies a b = (not a) or b
         
